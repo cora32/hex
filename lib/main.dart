@@ -34,7 +34,13 @@ class MyApp extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
-          children: [HexTitle(), Expanded(child: MainPage())],
+          children: [
+            HexTitle(),
+            SizedBox(
+              height: 1,
+            ),
+            Expanded(child: MainPage())
+          ],
         ),
       ),
     );

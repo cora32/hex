@@ -44,20 +44,32 @@ class _MainPageState extends State<MainPage> {
   Widget getFields() => Column(
         children: [
           Expanded(
-            child: TextField(
-              controller: ctrl1,
-              onChanged: encode,
-              decoration: const InputDecoration(
-                  border: InputBorder.none, contentPadding: EdgeInsets.all(16)),
+            child: Container(
+              decoration: const BoxDecoration(color: Colors.white10),
+              child: TextField(
+                controller: ctrl1,
+                onChanged: encode,
+                decoration: const InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white12,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16)),
+              ),
             ),
           ),
           const Divider(),
           Expanded(
-            child: TextField(
-              controller: ctrl2,
-              onChanged: decode,
-              decoration: const InputDecoration(
-                  border: InputBorder.none, contentPadding: EdgeInsets.all(16)),
+            child: Container(
+              decoration: const BoxDecoration(color: Colors.white10),
+              child: TextField(
+                controller: ctrl2,
+                onChanged: decode,
+                decoration: const InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white12,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(16)),
+              ),
             ),
           ),
         ],

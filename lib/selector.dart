@@ -22,17 +22,24 @@ class _SelectorState extends State<Selector> {
       itemCount: widget.items.length,
       itemBuilder: (BuildContext context, int index) {
         final encoder = widget.items[index];
+        final isSelected = _selectedIndex == index;
 
-        return ListTile(
-          selected: index == _selectedIndex,
-          title: Text(encoder.name.toUpperCase()),
-          onTap: () {
+        return Ink(
+            color: isSelected ? Colors.amber : Colors.transparent,
+            child: ListTile(
+              tileColor: isSelected ? Colors.orange : null,
+              selected: isSelected,
+              title: Text(encoder.name.toUpperCase(),
+                  style: TextStyle(
+                    color: isSelected ? Colors.black87 : Colors.white,
+                  )),
+              onTap: () {
             setState(() {
               _selectedIndex = index;
             });
             widget.onTap(encoder);
           },
-        );
+            ));
       },
     );
   }
