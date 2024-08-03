@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hex/hex_controller.dart';
+
+import 'hex_controller.dart';
 
 class Selector extends StatefulWidget {
   final List<Encoders> items;

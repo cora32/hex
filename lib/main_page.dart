@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hex/selector.dart';
 
 import 'hex_controller.dart';
+import 'selector.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -65,12 +65,14 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        getSelector(),
-        const VerticalDivider(),
-        Expanded(child: getFields())
-      ],
+    return SizedBox(
+      child: Row(
+        children: [
+          getSelector(),
+          const VerticalDivider(),
+          Expanded(child: getFields())
+        ],
+      ),
     );
   }
 }
