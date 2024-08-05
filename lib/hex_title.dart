@@ -1,6 +1,7 @@
-import 'package:Hex/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+
+import 'strings.dart';
 
 class HexTitle extends StatelessWidget {
   const HexTitle({super.key});
