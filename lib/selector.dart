@@ -34,7 +34,7 @@ class _SelectorState extends State<Selector> {
                     color: isSelected ? Colors.black87 : Colors.white,
                   )),
               onTap: () {
-                setState(() {
+            setState(() {
               _selectedIndex = index;
             });
             widget.onTap(encoder);
