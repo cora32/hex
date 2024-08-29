@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  get: ^4.6.5
+  get: ^4.6.6
   flutter:
     sdk: flutter
   window_manager: ^0.3.9

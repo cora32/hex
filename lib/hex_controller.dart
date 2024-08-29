@@ -1,8 +1,34 @@
 import 'dart:convert';
 
+import 'package:get/get.dart';
+import 'package:hex/utils.dart';
+
 enum Encoders { base64, hex, escape }
 
+enum Modes { ascii, code, hex }
+
+extension ModeExt on Modes {
+  String decode(String text) {
+    switch (this) {
+      case Modes.ascii:
+        return toHex(text);
+      case Modes.code:
+        return toHex(text);
+      case Modes.hex:
+        return toHex(text);
+      default:
+        return text;
+    }
+  }
+}
+
 class HexController {
+  var modeSelectedUpper = Modes.ascii.obs;
+  var modeSelectedLower = Modes.ascii.obs;
+  var textUpper = "".obs;
+  var textLower = "".obs;
+  var hexMapTextUpper = "";
+  var hexMapTextLower = "";
   final encoders = Encoders.values;
   final base64Encoder = const Base64Encoder();
   final base64Decoder = const Base64Decoder();
@@ -13,13 +39,31 @@ class HexController {
     escapeApos: false,
     escapeSlash: false,
   );
-
   late var htmlEscape = HtmlEscape(htmlEscapeMode);
-
   var selectedEncoder = Encoders.values.first;
 
-  String _encodeHex(String val) =>
-      val.codeUnits.map((e) => e.toRadixString(16)).join().toUpperCase();
+  final text = "asdfghjk\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n"
+      "........\n";
+
+  String _encodeHex(String val) => toHex(val);
 
   String _decodeHex(String val) => List.generate(
           val.length ~/ 2,
@@ -29,6 +73,9 @@ class HexController {
 
   String encode(String val) {
     print('Encoding $val with ${selectedEncoder.name}');
+
+    textUpper.value = val;
+    hexMapTextUpper = modeSelectedUpper.value.decode(val);
 
     switch (selectedEncoder) {
       case Encoders.base64:
@@ -45,6 +92,9 @@ class HexController {
   String decode(String val) {
     print('Decoding $val with ${selectedEncoder.name}');
 
+    textLower.value = val;
+    hexMapTextLower = modeSelectedLower.value.decode(val);
+
     switch (selectedEncoder) {
       case Encoders.base64:
         return utf8.decode(base64Decoder.convert(val));
@@ -55,5 +105,11 @@ class HexController {
       default:
         return val;
     }
+  }
+
+  void setLowerMode(Modes mode) {
+    modeSelectedLower.value = mode;
+
+    hexMapTextLower = mode.decode(textLower.value);
   }
 }
