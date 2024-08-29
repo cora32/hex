@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'hex_controller.dart';
 import 'hex_map.dart';
@@ -13,27 +14,31 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final controller = HexController();
-  final ctrl1 = TextEditingController();
-  final ctrl2 = TextEditingController();
+  final ctrlEncoded = TextEditingController();
+  final ctrlDecoded = TextEditingController();
   final ctrl3 = TextEditingController();
   final ctrl4 = TextEditingController();
 
   @override
   void dispose() {
-    ctrl1.dispose();
-    ctrl2.dispose();
+    ctrlEncoded.dispose();
+    ctrlDecoded.dispose();
     ctrl3.dispose();
     ctrl4.dispose();
 
     super.dispose();
   }
 
-  void encode(String val) {
-    ctrl2.text = controller.encode(val);
+  void onChangedEncoded(String val) {
+    print("onChangeEnc");
+    controller.decode(val);
+    ctrlDecoded.text = controller.textDecoded.value;
   }
 
-  void decode(String val) {
-    ctrl1.text = controller.decode(val);
+  void onChangedDecoded(String val) {
+    print("onChangeDec");
+    controller.encode(val);
+    ctrlEncoded.text = controller.textEncoded.value;
   }
 
   Widget getSelector() => SizedBox(
@@ -42,8 +47,9 @@ class _MainPageState extends State<MainPage> {
           items: controller.encoders,
           onTap: (Encoders val) {
             print('Selected encoder: $val');
-            controller.selectedEncoder = val;
-            decode(ctrl2.text);
+            controller.setEncoder(val);
+
+            ctrlDecoded.text = controller.textDecoded.value;
           }));
 
   Widget getFields() => Column(
@@ -51,7 +57,19 @@ class _MainPageState extends State<MainPage> {
           Expanded(
             child: Container(
               decoration: const BoxDecoration(color: Colors.white10),
-              child: HexTextField(ctrl1, encode),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: HexTextField(ctrlEncoded, onChangedEncoded),
+                  ),
+                  Obx(() => ModeBlock(
+                      controller,
+                      controller.setUpperMode,
+                      controller.encodedMap.value,
+                      controller.modeSelectedEncoded.value))
+                ],
+              ),
             ),
           ),
           const Divider(),
@@ -61,8 +79,12 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: HexTextField(ctrl2, decode)),
-                  ModeBlock(controller)
+                  Expanded(child: HexTextField(ctrlDecoded, onChangedDecoded)),
+                  Obx(() => ModeBlock(
+                      controller,
+                      controller.setLowerMode,
+                      controller.decodedMap.value,
+                      controller.modeSelectedDecoded.value))
                 ],
               ),
             ),
@@ -100,6 +122,9 @@ class _HexTextFieldState extends State<HexTextField> {
     return TextField(
       controller: widget.ctrl,
       onChanged: widget.onChanged,
+      onEditingComplete: () {
+        widget.onChanged(widget.ctrl.text);
+      },
       maxLines: 999,
       decoration: const InputDecoration(
           isDense: true,
@@ -113,8 +138,12 @@ class _HexTextFieldState extends State<HexTextField> {
 
 class ModeBlock extends StatefulWidget {
   final HexController controller;
+  final Function(Modes) onTap;
+  final String text;
+  final Modes selectedMode;
 
-  const ModeBlock(this.controller, {super.key});
+  const ModeBlock(this.controller, this.onTap, this.text, this.selectedMode,
+      {super.key});
 
   @override
   State<ModeBlock> createState() => _ModeBlockState();
@@ -132,36 +161,37 @@ class _ModeBlockState extends State<ModeBlock> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ModeSelector(widget.controller),
-        Container(
-          height: 8,
-          color: Colors.black54,
-        ),
-        Expanded(
-          child: Container(
-            width: 300,
-            child: Scrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
+    return Container(
+        width: 300,
+        color: Colors.black,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ModeSelector(widget.selectedMode, widget.controller, widget.onTap),
+            Container(
+              height: 8,
+              color: Colors.black54,
+            ),
+            Expanded(
+              child: Scrollbar(
                 controller: _scrollController,
-                child: SizedBox(
-                  width: 300,
-                  child: HexMap(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Container(
+                    color: Colors.black,
+                    child: HexMap(
                       const TextStyle(
                         color: Colors.orangeAccent,
                         // decoration: TextDecoration.underline,
                       ),
-                      widget.controller),
+                      widget.text,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ],
-    );
+          ],
+        ));
   }
 }
