@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:hex/utils.dart';
 
@@ -7,9 +6,18 @@ enum Encoders { base64, hex, escape_html, escape_url }
 
 enum Modes { ascii, code, hex }
 
-extension ModeExt on Modes {
-  String decode(String text) {
-    switch (this) {
+class HexController {
+  var modeSelectedEncoded = Modes.ascii.obs;
+  var modeSelectedDecoded = Modes.ascii.obs;
+  var textEncoded = "".obs;
+  var textDecoded = "".obs;
+  var encodedMap = "".obs;
+  var decodedMap = "".obs;
+  final encoders = Encoders.values;
+  var selectedEncoder = Encoders.values.first;
+
+  static String decodeForMap(Modes mode, String text) {
+    switch (mode) {
       case Modes.ascii:
         return toASCII(text);
       case Modes.code:
@@ -20,43 +28,70 @@ extension ModeExt on Modes {
         return text;
     }
   }
-}
 
-class HexController {
-  var modeSelectedEncoded = Modes.ascii.obs;
-  var modeSelectedDecoded = Modes.ascii.obs;
-  var textEncoded = "".obs;
-  var textDecoded = "".obs;
-  var encodedMap = "".obs;
-  var decodedMap = "".obs;
-  final encoders = Encoders.values;
-  final base64Encoder = const Base64Encoder();
-  final base64Decoder = const Base64Decoder();
+  static String decodeTask(
+      String val, Encoders selectedEncoder, String defaultValue) {
+    try {
+      switch (selectedEncoder) {
+        case Encoders.base64:
+          return fromBase64(val);
+        case Encoders.hex:
+          return fromHex(val);
+        case Encoders.escape_html:
+          return fromEscapedHtml(val);
+        case Encoders.escape_url:
+          return Uri.decodeFull(val);
+        default:
+          return val;
+      }
+    } catch (ex) {
+      print(ex);
 
-  // final htmlEscapeMode = const HtmlEscapeMode(
-  //   name: 'custom',
-  //   escapeLtGt: true,
-  //   escapeQuot: true,
-  //   escapeApos: true,
-  //   escapeSlash: true,
-  // );
-  late var htmlEscape = const HtmlEscape();
-  var selectedEncoder = Encoders.values.first;
+      return defaultValue;
+    }
+  }
 
-  String _encodeHex(String val) => toHex(val);
+  static String encodeTask(
+      String val, Encoders selectedEncoder, String defaultValue) {
+    try {
+      switch (selectedEncoder) {
+        case Encoders.base64:
+          return toBase64(val);
+        case Encoders.hex:
+          return toHex(val);
+        case Encoders.escape_html:
+          return toEscapedHtml(val);
+        case Encoders.escape_url:
+          return Uri.encodeFull(val);
+        default:
+          return val;
+      }
+    } catch (ex) {
+      print(ex);
 
-  String _decodeHex(String val) => List.generate(
-          val.length ~/ 2,
-          (index) => String.fromCharCode(
-              int.parse(val.substring(index * 2, index * 2 + 2), radix: 16)))
-      .join();
+      return defaultValue;
+    }
+  }
 
-  String decode(String val) {
+  static String decodeTask2(String val) {
+    return val + val;
+  }
+
+  Future<String> decode(String val) async {
     print('Decoding $val with ${selectedEncoder.name}');
 
     textEncoded.value = val;
+    textDecoded.value = await compute((map) {
+      final text = map['text'] as String;
+      final encoder = map['encoder'] as Encoders;
+      final defaultValue = map['defaultValue'] as String;
 
-    textDecoded.value = _decode(val);
+      return decodeTask(text, encoder, defaultValue);
+    }, {
+      "text": val,
+      "encoder": selectedEncoder,
+      "defaultValue": textDecoded.value
+    });
 
     print('Decoded: ${textDecoded.value}');
 
@@ -66,12 +101,21 @@ class HexController {
     return textDecoded.value;
   }
 
-  String encode(String val) {
+  Future<String> encode(String val) async {
     print('Encoding $val with ${selectedEncoder.name}');
 
     textDecoded.value = val;
+    textEncoded.value = await compute((map) {
+      final text = map['text'] as String;
+      final encoder = map['encoder'] as Encoders;
+      final defaultValue = map['defaultValue'] as String;
 
-    textEncoded.value = _encode(val);
+      return encodeTask(text, encoder, defaultValue);
+    }, {
+      "text": val,
+      "encoder": selectedEncoder,
+      "defaultValue": textEncoded.value
+    });
 
     print('Encoded: ${textEncoded.value}');
 
@@ -93,54 +137,22 @@ class HexController {
     updateUpperMap();
   }
 
-  void updateUpperMap() {
-    encodedMap.value = modeSelectedEncoded.value.decode(textEncoded.value);
+  Future<void> updateUpperMap() async {
+    encodedMap.value = await compute((map) {
+      final text = map['text'] as String;
+      final mode = map['mode'] as Modes;
+
+      return decodeForMap(mode, text);
+    }, {'text': textEncoded.value, 'mode': modeSelectedDecoded.value});
   }
 
-  void updateLowerMap() {
-    decodedMap.value = modeSelectedDecoded.value.decode(textDecoded.value);
-  }
+  Future<void> updateLowerMap() async {
+    decodedMap.value = await compute((map) {
+      final text = map['text'] as String;
+      final mode = map['mode'] as Modes;
 
-  String _decode(String val) {
-    try {
-      switch (selectedEncoder) {
-        case Encoders.base64:
-          return utf8.decode(base64Decoder.convert(val), allowMalformed: true);
-        case Encoders.hex:
-          return _decodeHex(val);
-        case Encoders.escape_html:
-          return _decodeHex(val);
-        case Encoders.escape_url:
-          return Uri.decodeFull(val);
-        default:
-          return val;
-      }
-    } catch (ex) {
-      print(ex);
-
-      return textDecoded.value;
-    }
-  }
-
-  String _encode(String val) {
-    try {
-      switch (selectedEncoder) {
-        case Encoders.base64:
-          return base64Encoder.convert(utf8.encode(val));
-        case Encoders.hex:
-          return _encodeHex(val);
-        case Encoders.escape_html:
-          return htmlEscape.convert(val);
-        case Encoders.escape_url:
-          return Uri.encodeFull(val);
-        default:
-          return val;
-      }
-    } catch (ex) {
-      print(ex);
-
-      return textEncoded.value;
-    }
+      return decodeForMap(mode, text);
+    }, {'text': textDecoded.value, 'mode': modeSelectedDecoded.value});
   }
 
   void setEncoder(Encoders val) {

@@ -16,29 +16,25 @@ class _MainPageState extends State<MainPage> {
   final controller = HexController();
   final ctrlEncoded = TextEditingController();
   final ctrlDecoded = TextEditingController();
-  final ctrl3 = TextEditingController();
-  final ctrl4 = TextEditingController();
+  final ctrlUpperMap = TextEditingController();
+  final ctrlLowerMap = TextEditingController();
 
   @override
   void dispose() {
     ctrlEncoded.dispose();
     ctrlDecoded.dispose();
-    ctrl3.dispose();
-    ctrl4.dispose();
+    ctrlUpperMap.dispose();
+    ctrlLowerMap.dispose();
 
     super.dispose();
   }
 
-  void onChangedEncoded(String val) {
-    print("onChangeEnc");
-    controller.decode(val);
-    ctrlDecoded.text = controller.textDecoded.value;
+  Future<void> onChangedEncoded(String val) async {
+    ctrlDecoded.text = await controller.decode(val);
   }
 
-  void onChangedDecoded(String val) {
-    print("onChangeDec");
-    controller.encode(val);
-    ctrlEncoded.text = controller.textEncoded.value;
+  Future<void> onChangedDecoded(String val) async {
+    ctrlEncoded.text = await controller.encode(val);
   }
 
   Widget getSelector() => SizedBox(
