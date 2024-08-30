@@ -33,3 +33,17 @@ String fromBase64(String text) =>
     utf8.decode(base64Decoder.convert(text), allowMalformed: true);
 
 String toBase64(String text) => base64Encoder.convert(utf8.encode(text));
+
+// computeSync() async {
+//   return await compute((map) {
+//     final text = map['text'] as String;
+//     final encoder = map['encoder'] as Encoders;
+//     final defaultValue = map['defaultValue'] as String;
+//
+//     return decodeTask(text, encoder, defaultValue);
+//   }, {
+//     "text": val,
+//     "encoder": selectedEncoder,
+//     "defaultValue": textDecoded.value
+//   });
+// }

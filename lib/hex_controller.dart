@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:hex/utils.dart';
+import 'package:worker_manager/worker_manager.dart';
 
 enum Encoders { base64, hex, escape_html, escape_url }
 
@@ -81,17 +81,14 @@ class HexController {
     print('Decoding $val with ${selectedEncoder.name}');
 
     textEncoded.value = val;
-    textDecoded.value = await compute((map) {
-      final text = map['text'] as String;
-      final encoder = map['encoder'] as Encoders;
-      final defaultValue = map['defaultValue'] as String;
-
-      return decodeTask(text, encoder, defaultValue);
-    }, {
-      "text": val,
-      "encoder": selectedEncoder,
-      "defaultValue": textDecoded.value
-    });
+    final encoder = selectedEncoder;
+    final defaultText = textDecoded.value;
+    textDecoded.value = await workerManager.execute<String>(
+      () async {
+        return decodeTask(val, encoder, defaultText);
+      },
+      priority: WorkPriority.immediately,
+    ).future;
 
     print('Decoded: ${textDecoded.value}');
 
@@ -105,17 +102,14 @@ class HexController {
     print('Encoding $val with ${selectedEncoder.name}');
 
     textDecoded.value = val;
-    textEncoded.value = await compute((map) {
-      final text = map['text'] as String;
-      final encoder = map['encoder'] as Encoders;
-      final defaultValue = map['defaultValue'] as String;
-
-      return encodeTask(text, encoder, defaultValue);
-    }, {
-      "text": val,
-      "encoder": selectedEncoder,
-      "defaultValue": textEncoded.value
-    });
+    final encoder = selectedEncoder;
+    final defaultText = textEncoded.value;
+    textEncoded.value = await workerManager.execute<String>(
+      () async {
+        return encodeTask(val, encoder, defaultText);
+      },
+      priority: WorkPriority.immediately,
+    ).future;
 
     print('Encoded: ${textEncoded.value}');
 
@@ -138,21 +132,27 @@ class HexController {
   }
 
   Future<void> updateUpperMap() async {
-    encodedMap.value = await compute((map) {
-      final text = map['text'] as String;
-      final mode = map['mode'] as Modes;
+    final mode = modeSelectedEncoded.value;
+    final text = textEncoded.value;
 
-      return decodeForMap(mode, text);
-    }, {'text': textEncoded.value, 'mode': modeSelectedDecoded.value});
+    encodedMap.value = await workerManager.execute<String>(
+      () async {
+        return decodeForMap(mode, text);
+      },
+      priority: WorkPriority.immediately,
+    ).future;
   }
 
   Future<void> updateLowerMap() async {
-    decodedMap.value = await compute((map) {
-      final text = map['text'] as String;
-      final mode = map['mode'] as Modes;
+    final mode = modeSelectedDecoded.value;
+    final text = textDecoded.value;
 
-      return decodeForMap(mode, text);
-    }, {'text': textDecoded.value, 'mode': modeSelectedDecoded.value});
+    decodedMap.value = await workerManager.execute<String>(
+      () async {
+        return decodeForMap(mode, text);
+      },
+      priority: WorkPriority.immediately,
+    ).future;
   }
 
   void setEncoder(Encoders val) {
