@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hex/strings.dart';
 
 import 'hex_controller.dart';
 import 'hex_map.dart';
@@ -30,11 +31,24 @@ class _MainPageState extends State<MainPage> {
   }
 
   Future<void> onChangedEncoded(String val) async {
-    ctrlDecoded.text = await controller.decode(val);
+    ctrlDecoded.text = val;
   }
 
   Future<void> onChangedDecoded(String val) async {
     ctrlEncoded.text = await controller.encode(val);
+  }
+
+  void onCopyUp() async {
+    ctrlEncoded.text = ctrlDecoded.text;
+    onDecodePressed();
+  }
+
+  void onDecodePressed() async {
+    ctrlDecoded.text = await controller.decode(ctrlEncoded.text);
+  }
+
+  void onEncodePressed() async {
+    ctrlDecoded.text = await controller.encode(ctrlEncoded.text);
   }
 
   Widget getSelector() => SizedBox(
@@ -49,6 +63,7 @@ class _MainPageState extends State<MainPage> {
           }));
 
   Widget getFields() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Container(
@@ -68,7 +83,10 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           ),
-          const Divider(),
+          Padding(
+            padding: const EdgeInsets.only(left: 32),
+            child: MiddleDivider(onEncodePressed, onDecodePressed, onCopyUp),
+          ),
           Expanded(
             child: Container(
               decoration: const BoxDecoration(color: Colors.white10),
@@ -189,5 +207,81 @@ class _ModeBlockState extends State<ModeBlock> {
             ),
           ],
         ));
+  }
+}
+
+class MiddleDivider extends StatefulWidget {
+  final VoidCallback onEncode;
+  final VoidCallback onDecode;
+  final VoidCallback onCopyUp;
+
+  const MiddleDivider(this.onEncode, this.onDecode, this.onCopyUp, {super.key});
+
+  @override
+  State<MiddleDivider> createState() => _MiddleDividerState();
+}
+
+class _MiddleDividerState extends State<MiddleDivider> {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton(
+            onPressed: widget.onCopyUp,
+            style: TextButton.styleFrom(
+                backgroundColor: Colors.amber,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                overlayColor: Colors.red,
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                    side: BorderSide(color: Colors.amber))),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12.0),
+              child: Icon(
+                Icons.keyboard_double_arrow_up,
+                color: Colors.black,
+                size: 32,
+              ),
+            )),
+        const SizedBox(
+          width: 64,
+        ),
+        TextButton(
+          onPressed: widget.onEncode,
+          style: TextButton.styleFrom(
+              backgroundColor: Colors.amber,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+              overlayColor: Colors.red,
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                  side: BorderSide(color: Colors.amber))),
+          child: const Text(
+            Strings.encodeStr,
+            style: TextStyle(fontSize: 15, color: Colors.black87),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 64.0),
+          child: Icon(Icons.arrow_downward_rounded),
+        ),
+        TextButton(
+          onPressed: widget.onDecode,
+          style: TextButton.styleFrom(
+              backgroundColor: Colors.amber,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+              overlayColor: Colors.red,
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                  side: BorderSide(color: Colors.amber))),
+          child: const Text(
+            Strings.decodeStr,
+            style: TextStyle(fontSize: 15, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
   }
 }

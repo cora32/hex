@@ -22,9 +22,7 @@ class _ModeSelectorState extends State<ModeSelector> {
         mainAxisSize: MainAxisSize.max,
         children: [
           for (var mode in Modes.values)
-            Expanded(
-                child: Btn(
-                    mode, widget.controller, widget.modeSelected, widget.onTap))
+            Btn(mode, widget.controller, widget.modeSelected, widget.onTap)
         ]);
   }
 }
@@ -48,16 +46,18 @@ class _BtnState extends State<Btn> {
     final isSelected = widget.mode == widget.modeSelected;
 
     return Container(
-      decoration: const BoxDecoration(
+        height: 40,
+        width: 99,
+        decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.black))),
         child: Ink(
             color: isSelected ? Colors.orange : Colors.orange,
             child: Container(
-              color: isSelected ? Colors.orange : Colors.deepOrangeAccent,
+              color: isSelected ? Colors.amber : Colors.blueGrey,
               child: ListTile(
                 selectedColor: Colors.orange,
                 dense: true,
-                visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
+                visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
                 contentPadding: const EdgeInsets.only(left: 0.0, right: 0.0),
                 // tileColor: isSelected ? Colors.orange : Colors.black54,
                 selected: isSelected,
