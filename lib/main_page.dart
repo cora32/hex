@@ -31,6 +31,21 @@ class _MainPageState extends State<MainPage> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+
+    ctrlEncoded.addListener(() {
+      controller.setSelectedValueEncoded(
+          ctrlEncoded.selection.end - ctrlEncoded.selection.start);
+    });
+
+    ctrlDecoded.addListener(() {
+      controller.setSelectedValueDecoded(
+          ctrlDecoded.selection.end - ctrlDecoded.selection.start);
+    });
+  }
+
   Future<void> onChangedEncoded(String val) async {
     ctrlDecoded.text = await controller.decode(val);
   }
@@ -97,8 +112,18 @@ class _MainPageState extends State<MainPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: HexTextField(
-                        ctrlEncoded, onChangedEncoded, focusNodeEncoded),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                              child: HexTextField(ctrlEncoded, onChangedEncoded,
+                                  focusNodeEncoded)),
+                          InfoPanel(
+                            controller,
+                            controller.textEncoded,
+                            controller.selectedEncodedLength,
+                          )
+                        ]),
                   ),
                   Obx(() => ModeBlock(
                       controller,
@@ -121,8 +146,18 @@ class _MainPageState extends State<MainPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                      child: HexTextField(
-                          ctrlDecoded, onChangedDecoded, focusNodeDecoded)),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                        Expanded(
+                            child: HexTextField(ctrlDecoded, onChangedDecoded,
+                                focusNodeDecoded)),
+                        InfoPanel(
+                          controller,
+                          controller.textDecoded,
+                          controller.selectedDecodedLength,
+                        )
+                      ])),
                   Obx(() => ModeBlock(
                         controller,
                         controller.setLowerMode,
@@ -325,6 +360,55 @@ class _MiddleDividerState extends State<MiddleDivider> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class InfoPanel extends StatefulWidget {
+  final HexController controller;
+  final RxString selectedText;
+  final RxInt length;
+
+  const InfoPanel(this.controller, this.selectedText, this.length, {super.key});
+
+  @override
+  State<InfoPanel> createState() => _InfoPanelState();
+}
+
+class _InfoPanelState extends State<InfoPanel> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 20,
+      color: Colors.blueGrey,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Obx(
+            () => Text(Strings.selected + widget.length.value.toString(),
+                style: GoogleFonts.robotoMono(
+                    color: Colors.white70, height: 1.0, fontSize: 10
+                    // decoration: TextDecoration.underline,
+                    )),
+          ),
+          const SizedBox(
+            width: 32,
+          ),
+          Obx(
+            () => Text(
+              Strings.length + widget.selectedText.value.length.toString(),
+              style: GoogleFonts.robotoMono(
+                  color: Colors.white70, height: 1.0, fontSize: 10
+                  // decoration: TextDecoration.underline,
+                  ),
+            ),
+          ),
+          const SizedBox(
+            width: 32,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hex/hex_controller.dart';
 
+const scrollbarWidth = 0.0;
+
 class ModeSelector extends StatefulWidget {
   final Modes modeSelected;
   final HexController controller;
@@ -135,7 +137,6 @@ class HexMapPainter extends CustomPainter {
   final TextStyle style;
   final TextStyle styleLine;
   final topOffset = 8.0;
-  final scrollbarWidth = 4.0;
   final double blockHeight;
 
   HexMapPainter(this.text, this.style, this.styleLine,
@@ -315,7 +316,6 @@ class OverlayPainter extends CustomPainter {
     ..isAntiAlias = true
     ..strokeCap = StrokeCap.round;
   final topOffset = 8.0;
-  final scrollbarWidth = 6.0;
   final String text;
   final double blockHeight;
   final double x;
@@ -408,7 +408,6 @@ class OverlayPainter extends CustomPainter {
       onRegionSelected(-1, -1);
     } else if (left > 0.0 && topTap >= 0.0 && column < 8) {
       final textPosition = (lineTap) * 8 + column;
-      print("textPosition: $textPosition");
       onRegionSelected(
           textPosition ~/ selectedMode.byteCount, selectedMode.byteCount);
       canvas.drawRect(

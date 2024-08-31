@@ -15,6 +15,8 @@ enum Modes {
 }
 
 class HexController {
+  var selectedDecodedLength = 0.obs;
+  var selectedEncodedLength = 0.obs;
   var modeSelectedEncoded = Modes.ascii.obs;
   var modeSelectedDecoded = Modes.ascii.obs;
   var textEncoded = "".obs;
@@ -167,5 +169,13 @@ class HexController {
     selectedEncoder = val;
 
     decode(textEncoded.value);
+  }
+
+  void setSelectedValueEncoded(int length) {
+    selectedEncodedLength.value = length;
+  }
+
+  void setSelectedValueDecoded(int length) {
+    selectedDecodedLength.value = length;
   }
 }
