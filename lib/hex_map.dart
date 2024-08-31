@@ -78,9 +78,14 @@ class _BtnState extends State<Btn> {
 
 class HexMap extends StatefulWidget {
   final TextStyle style;
+  final TextStyle styleLine;
   final String text;
+  final Modes selectedMode;
+  final Function(int start, int length) onRegionSelected;
 
-  const HexMap(this.style, this.text, {super.key});
+  const HexMap(this.style, this.styleLine, this.text, this.onRegionSelected,
+      this.selectedMode,
+      {super.key});
 
   @override
   State<HexMap> createState() => _HexMapState();
@@ -102,12 +107,15 @@ class _HexMapState extends State<HexMap> {
           height: height,
           child: RepaintBoundary(
             child: CustomPaint(
-                painter: HexMapPainter(widget.text, widget.style,
+                painter: HexMapPainter(
+                    widget.text, widget.style, widget.styleLine,
                     blockHeight: blockHeight)),
           ),
         ),
         SizedBox(
-            height: height, child: HoveringOverlay(widget.text, blockHeight))
+            height: height,
+            child: HoveringOverlay(widget.text, blockHeight,
+                widget.selectedMode, widget.onRegionSelected))
       ],
     ));
   }
@@ -125,11 +133,13 @@ class HexMapPainter extends CustomPainter {
 
   final String text;
   final TextStyle style;
+  final TextStyle styleLine;
   final topOffset = 8.0;
-  final scrollbarWidth = 6.0;
+  final scrollbarWidth = 4.0;
   final double blockHeight;
 
-  HexMapPainter(this.text, this.style, {required this.blockHeight});
+  HexMapPainter(this.text, this.style, this.styleLine,
+      {required this.blockHeight});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -152,15 +162,22 @@ class HexMapPainter extends CustomPainter {
       newText += Iterable.generate(paddingCount, (i) => ".").join();
     }
 
+    var drawLine = true;
     for (var i = 0; i < newText.length; i++) {
       final code = newText[i];
 
       if (i > 0 && i % 8 == 0) {
         column = 0;
         line++;
+        drawLine = true;
       }
 
       xOffset = column > 3 ? blockWidth : 0.0;
+
+      if (drawLine) {
+        drawLine = false;
+        drawLineNumber(canvas, line, styleLine);
+      }
 
       drawSymbol(canvas, column, line, blockWidth, startOffset, xOffset, code);
 
@@ -171,6 +188,18 @@ class HexMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant HexMapPainter oldDelegate) {
     return text != oldDelegate.text;
+  }
+
+  void drawLineNumber(Canvas canvas, int line, TextStyle styleLine) {
+    final textPainter = TextPainter(
+        text: TextSpan(text: line.toString(), style: styleLine),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr)
+      ..layout(minWidth: 20, maxWidth: 20);
+
+    final top = line * blockHeight + line * topOffset;
+
+    textPainter.paint(canvas, Offset(2, top));
   }
 
   void drawSymbol(Canvas canvas, int column, int line, double blockWidth,
@@ -199,8 +228,12 @@ class HexMapPainter extends CustomPainter {
 class HoveringOverlay extends StatefulWidget {
   final String text;
   final double blockHeight;
+  final Modes selectedMode;
+  final Function(int, int) onRegionSelected;
 
-  const HoveringOverlay(this.text, this.blockHeight, {super.key});
+  const HoveringOverlay(
+      this.text, this.blockHeight, this.selectedMode, this.onRegionSelected,
+      {super.key});
 
   @override
   State<HoveringOverlay> createState() => _HoveringOverlayState();
@@ -214,6 +247,8 @@ class _HoveringOverlayState extends State<HoveringOverlay> {
   var isHovering = false;
   var isTap = false;
   var updaterValue = false;
+  var oldLeft = -1.0;
+  var oldTopTap = -1.0;
 
   onExit(PointerEvent details) {
     setState(() {
@@ -239,6 +274,11 @@ class _HoveringOverlayState extends State<HoveringOverlay> {
     });
   }
 
+  onSavePreviousState(double left, double topTap) {
+    oldLeft = left;
+    oldTopTap = topTap;
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -249,14 +289,19 @@ class _HoveringOverlayState extends State<HoveringOverlay> {
             child: RepaintBoundary(
                 child: CustomPaint(
                     painter: OverlayPainter(widget.text, x, y, tapX, tapY,
-                        isHovering, isTap, updaterValue,
+                        isHovering,
+                        isTap,
+                        updaterValue,
+                        oldLeft,
+                        oldTopTap,
+                        widget.selectedMode,
+                        onSavePreviousState,
+                        widget.onRegionSelected,
                         blockHeight: widget.blockHeight)))));
   }
 }
 
 class OverlayPainter extends CustomPainter {
-  // final paint1 = Paint()..color = Colors.amber;
-  // final paint2 = Paint()..color = Colors.black54;
   static final paintLine = Paint()
     ..color = const Color.fromARGB(85, 255, 66, 66)
     ..strokeWidth = 0.4
@@ -265,22 +310,32 @@ class OverlayPainter extends CustomPainter {
     ..strokeCap = StrokeCap.round;
   static final paintBlock = Paint()
     ..color = const Color.fromARGB(127, 78, 255, 28)
-    ..strokeWidth = 1.5
-    ..style = PaintingStyle.fill
+    ..strokeWidth = 2.5
+    ..style = PaintingStyle.stroke
     ..isAntiAlias = true
     ..strokeCap = StrokeCap.round;
   final topOffset = 8.0;
   final scrollbarWidth = 6.0;
-
   final String text;
   final double blockHeight;
   final double x;
   final double y;
   final double tapX;
   final double tapY;
+  final double oldLeft;
+  final double oldTopTap;
+  final Modes selectedMode;
   final bool isHovering;
   final bool isTap;
   final bool updaterValue;
+  final Function(
+    double,
+    double,
+  ) onSavePreviousState;
+  final Function(
+    int,
+    int,
+  ) onRegionSelected;
 
   OverlayPainter(
     this.text,
@@ -290,57 +345,40 @@ class OverlayPainter extends CustomPainter {
     this.tapY,
     this.isHovering,
     this.isTap,
-    this.updaterValue, {
+    this.updaterValue,
+    this.oldLeft,
+    this.oldTopTap,
+    this.selectedMode,
+    this.onSavePreviousState,
+    this.onRegionSelected, {
     required this.blockHeight,
   });
 
   var previousTapRect = Rect.zero;
-  static var oldLeft = -1.0;
-  static var oldTopTap = -1.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     final blockWidth = size.width / 12.0;
 
+    if (isHovering) {
+      drawLine(canvas, size.width);
+    }
+
     if (isTap) {
-      final lineTap = (tapY / (blockHeight + topOffset)).toInt();
-      final topTap = lineTap * blockHeight + lineTap * topOffset;
-      final startOffset =
-          (size.width - blockWidth * 8) / 2.0 - blockWidth / 2.0;
-      final moreThenHalf = tapX > size.width / 2.0;
-      var column =
-          ((tapX + (moreThenHalf ? -blockWidth * 2 : -blockWidth)) / blockWidth)
-              .toInt();
-
-      if (column % 2 == 1) column--;
-
-      final xOffset = column > 3 ? blockWidth : 0.0;
-      final left = column * blockWidth + startOffset + xOffset - scrollbarWidth;
-
-      if (left == oldLeft && topTap == oldTopTap) {
-        oldLeft = -1.0;
-        oldTopTap = -1.0;
-      } else if (left > 0.0 && topTap >= 0.0 && column < 8) {
-        canvas.drawRect(
-            Rect.fromLTWH(left, topTap, blockWidth * 2, blockHeight),
-            paintBlock);
-
-        oldLeft = left;
-        oldTopTap = topTap;
-      }
+      drawBlock(canvas, blockWidth, size.width, selectedMode);
     } else if (oldLeft > 0.0 && oldTopTap >= 0.0) {
       canvas.drawRect(
-          Rect.fromLTWH(oldLeft, oldTopTap, blockWidth * 2, blockHeight),
+          Rect.fromLTWH(oldLeft, oldTopTap, blockWidth * selectedMode.byteCount,
+              blockHeight),
           paintBlock);
     }
+  }
 
-    if (isHovering) {
-      var line = (y / (blockHeight + topOffset)).toInt();
-      final top = line * blockHeight + line * topOffset;
+  void drawLine(Canvas canvas, double width) {
+    var line = (y / (blockHeight + topOffset)).toInt();
+    final top = line * blockHeight + line * topOffset;
 
-      canvas.drawRect(
-          Rect.fromLTWH(0, top, size.width, blockHeight), paintLine);
-    }
+    canvas.drawRect(Rect.fromLTWH(0, top, width, blockHeight), paintLine);
   }
 
   @override
@@ -348,5 +386,37 @@ class OverlayPainter extends CustomPainter {
     return y != oldDelegate.y ||
         tapY != oldDelegate.tapY ||
         updaterValue != oldDelegate.updaterValue;
+  }
+
+  void drawBlock(
+      Canvas canvas, double blockWidth, double width, Modes selectedMode) {
+    final lineTap = (tapY / (blockHeight + topOffset)).toInt();
+    final topTap = lineTap * blockHeight + lineTap * topOffset;
+    final startOffset = (width - blockWidth * 8) / 2.0 - blockWidth / 2.0;
+    final moreThenHalf = tapX > width / 2.0;
+    var column =
+        ((tapX + (moreThenHalf ? -blockWidth * 2 : -blockWidth)) / blockWidth)
+            .toInt();
+
+    if (column % selectedMode.byteCount == 1) column--;
+
+    final xOffset = column > 3 ? blockWidth : 0.0;
+    final left = column * blockWidth + startOffset + xOffset - scrollbarWidth;
+
+    if (left == oldLeft && topTap == oldTopTap) {
+      onSavePreviousState(-1.0, -1.0);
+      onRegionSelected(-1, -1);
+    } else if (left > 0.0 && topTap >= 0.0 && column < 8) {
+      final textPosition = (lineTap) * 8 + column;
+      print("textPosition: $textPosition");
+      onRegionSelected(
+          textPosition ~/ selectedMode.byteCount, selectedMode.byteCount);
+      canvas.drawRect(
+          Rect.fromLTWH(
+              left, topTap, blockWidth * selectedMode.byteCount, blockHeight),
+          paintBlock);
+
+      onSavePreviousState(left, topTap);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hex/strings.dart';
 
 import 'hex_controller.dart';
@@ -17,9 +18,13 @@ class _MainPageState extends State<MainPage> {
   final controller = HexController();
   final ctrlEncoded = TextEditingController();
   final ctrlDecoded = TextEditingController();
+  final FocusNode focusNodeEncoded = FocusNode(debugLabel: 'TextField Encode');
+  final FocusNode focusNodeDecoded = FocusNode(debugLabel: 'TextField Decode');
 
   @override
   void dispose() {
+    focusNodeEncoded.dispose();
+    focusNodeDecoded.dispose();
     ctrlEncoded.dispose();
     ctrlDecoded.dispose();
 
@@ -47,6 +52,30 @@ class _MainPageState extends State<MainPage> {
     ctrlDecoded.text = await controller.encode(ctrlEncoded.text);
   }
 
+  void onRegionSelectedUpper(int start, int length) {
+    if (start >= 0 &&
+        ctrlEncoded.text.isNotEmpty &&
+        start < ctrlEncoded.text.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        focusNodeEncoded.requestFocus();
+        ctrlEncoded.selection = ctrlEncoded.selection
+            .copyWith(baseOffset: start, extentOffset: start + 1);
+      });
+    }
+  }
+
+  void onRegionSelectedLower(int start, int byteLength) {
+    if (start >= 0 &&
+        ctrlDecoded.text.isNotEmpty &&
+        start < ctrlDecoded.text.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        focusNodeDecoded.requestFocus();
+        ctrlDecoded.selection = ctrlDecoded.selection
+            .copyWith(baseOffset: start, extentOffset: start + 1);
+      });
+    }
+  }
+
   Widget getSelector() => SizedBox(
       width: 200,
       child: Selector(
@@ -68,13 +97,15 @@ class _MainPageState extends State<MainPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: HexTextField(ctrlEncoded, onChangedEncoded),
+                    child: HexTextField(
+                        ctrlEncoded, onChangedEncoded, focusNodeEncoded),
                   ),
                   Obx(() => ModeBlock(
                       controller,
                       controller.setUpperMode,
                       controller.encodedMap.value,
-                      controller.modeSelectedEncoded.value))
+                      controller.modeSelectedEncoded.value,
+                      onRegionSelectedUpper))
                 ],
               ),
             ),
@@ -89,12 +120,16 @@ class _MainPageState extends State<MainPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: HexTextField(ctrlDecoded, onChangedDecoded)),
+                  Expanded(
+                      child: HexTextField(
+                          ctrlDecoded, onChangedDecoded, focusNodeDecoded)),
                   Obx(() => ModeBlock(
-                      controller,
-                      controller.setLowerMode,
-                      controller.decodedMap.value,
-                      controller.modeSelectedDecoded.value))
+                        controller,
+                        controller.setLowerMode,
+                        controller.decodedMap.value,
+                        controller.modeSelectedDecoded.value,
+                        onRegionSelectedLower,
+                      ))
                 ],
               ),
             ),
@@ -118,9 +153,10 @@ class _MainPageState extends State<MainPage> {
 
 class HexTextField extends StatefulWidget {
   final TextEditingController ctrl;
+  final FocusNode focusNode;
   final void Function(String val) onChanged;
 
-  const HexTextField(this.ctrl, this.onChanged, {super.key});
+  const HexTextField(this.ctrl, this.onChanged, this.focusNode, {super.key});
 
   @override
   State<HexTextField> createState() => _HexTextFieldState();
@@ -130,6 +166,8 @@ class _HexTextFieldState extends State<HexTextField> {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      focusNode: widget.focusNode,
+      autofocus: true,
       controller: widget.ctrl,
       onChanged: widget.onChanged,
       onEditingComplete: () {
@@ -149,10 +187,12 @@ class _HexTextFieldState extends State<HexTextField> {
 class ModeBlock extends StatefulWidget {
   final HexController controller;
   final Function(Modes) onTap;
+  final Function(int, int) onRegionSelected;
   final String text;
   final Modes selectedMode;
 
   const ModeBlock(this.controller, this.onTap, this.text, this.selectedMode,
+      this.onRegionSelected,
       {super.key});
 
   @override
@@ -191,12 +231,19 @@ class _ModeBlockState extends State<ModeBlock> {
                   child: Container(
                     color: Colors.black,
                     child: HexMap(
-                      const TextStyle(
-                        color: Colors.orangeAccent, height: 1.5, fontSize: 12
-                          // decoration: TextDecoration.underline,
-                      ),
-                      widget.text,
-                    ),
+                        GoogleFonts.robotoMono(
+                            color: Colors.orangeAccent,
+                            height: 1.5,
+                            fontSize: 12
+                            // decoration: TextDecoration.underline,
+                            ),
+                        GoogleFonts.robotoMono(
+                            color: Colors.white54, height: 1.7, fontSize: 10
+                            // decoration: TextDecoration.underline,
+                            ),
+                        widget.text,
+                        widget.onRegionSelected,
+                        widget.selectedMode),
                   ),
                 ),
               ),

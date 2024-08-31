@@ -4,7 +4,15 @@ import 'package:worker_manager/worker_manager.dart';
 
 enum Encoders { base64, hex, escape_html, escape_url }
 
-enum Modes { ascii, code, hex }
+enum Modes {
+  ascii(1),
+  code(2),
+  hex(2);
+
+  final int byteCount;
+
+  const Modes(this.byteCount);
+}
 
 class HexController {
   var modeSelectedEncoded = Modes.ascii.obs;
