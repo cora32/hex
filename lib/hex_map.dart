@@ -47,9 +47,9 @@ class _BtnState extends State<Btn> {
 
     return Container(
         height: 40,
-        width: 99,
+        width: 69,
         decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.black))),
+            border: Border(bottom: BorderSide(color: Colors.black))),
         child: Ink(
             color: isSelected ? Colors.orange : Colors.orange,
             child: Container(
@@ -94,23 +94,34 @@ class _HexMapState extends State<HexMap> {
     final len = widget.text.length;
     final height = (blockHeight + 8) * (len / 8).ceil();
 
-    return SizedBox(
-        height: height,
-        child: CustomPaint(
-            painter: HexMapPainter(widget.text, widget.style,
-                blockHeight: blockHeight)));
+    return IntrinsicHeight(
+        child: Stack(
+      fit: StackFit.expand,
+      children: [
+        SizedBox(
+          height: height,
+          child: RepaintBoundary(
+            child: CustomPaint(
+                painter: HexMapPainter(widget.text, widget.style,
+                    blockHeight: blockHeight)),
+          ),
+        ),
+        SizedBox(
+            height: height, child: HoveringOverlay(widget.text, blockHeight))
+      ],
+    ));
   }
 }
 
 class HexMapPainter extends CustomPainter {
-  final paint1 = Paint()..color = Colors.amber;
-  final paint2 = Paint()..color = Colors.black54;
-  final paintBorder = Paint()
-    ..color = Colors.greenAccent
-    ..strokeWidth = 0.4
-    ..style = PaintingStyle.fill
-    ..isAntiAlias = true
-    ..strokeCap = StrokeCap.round;
+  // final paint1 = Paint()..color = Colors.amber;
+  // final paint2 = Paint()..color = Colors.black54;
+  // final paintBorder = Paint()
+  //   ..color = Colors.transparent
+  //   ..strokeWidth = 0.4
+  //   ..style = PaintingStyle.fill
+  //   ..isAntiAlias = true
+  //   ..strokeCap = StrokeCap.round;
 
   final String text;
   final TextStyle style;
@@ -122,7 +133,7 @@ class HexMapPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final blockWidth = size.width / 10.0;
+    final blockWidth = size.width / 12.0;
     final startOffset = (size.width - blockWidth * 8) / 2.0 - blockWidth / 2.0;
 
     print("HexMapPainter: $size; text: $text");
@@ -137,8 +148,9 @@ class HexMapPainter extends CustomPainter {
     // Padding text
     var newText = text;
     final paddingCount = 80 - text.length;
-    if (paddingCount > 0)
+    if (paddingCount > 0) {
       newText += Iterable.generate(paddingCount, (i) => ".").join();
+    }
 
     for (var i = 0; i < newText.length; i++) {
       final code = newText[i];
@@ -154,25 +166,6 @@ class HexMapPainter extends CustomPainter {
 
       column++;
     }
-
-    // Padding
-    // final padCount = 80 - text.length;
-    // if (padCount > 0) {
-    //   for (var i = 0; i < padCount; i++) {
-    //     if (i > 0 && i % 8 == 0) {
-    //       column = 0;
-    //       line++;
-    //     }
-    //
-    //     xOffset = column > 3 ? blockWidth : 0.0;
-    //
-    //     drawSymbol(canvas, column, line, blockWidth, startOffset,
-    //         xOffset,
-    //         ".");
-    //
-    //     column++;
-    //   }
-    // }
   }
 
   @override
@@ -186,8 +179,8 @@ class HexMapPainter extends CustomPainter {
     final top = line * blockHeight + line * topOffset;
     // final rect = Rect.fromLTWH(left, top, blockWidth, blockHeight);
     // canvas.drawRect(rect, paintBorder);
-    canvas.drawLine(Offset(left + 6, top + blockHeight),
-        Offset(left + blockWidth - 6, top + blockHeight), paintBorder);
+    // canvas.drawLine(Offset(left + 6, top + blockHeight),
+    //     Offset(left + blockWidth - 6, top + blockHeight), paintBorder);
 
     // print('units: $units; text: $text');
     // print('encoded: $encoded;');
@@ -200,5 +193,160 @@ class HexMapPainter extends CustomPainter {
       ..layout(minWidth: blockWidth, maxWidth: blockWidth);
 
     textPainter.paint(canvas, Offset(left, top));
+  }
+}
+
+class HoveringOverlay extends StatefulWidget {
+  final String text;
+  final double blockHeight;
+
+  const HoveringOverlay(this.text, this.blockHeight, {super.key});
+
+  @override
+  State<HoveringOverlay> createState() => _HoveringOverlayState();
+}
+
+class _HoveringOverlayState extends State<HoveringOverlay> {
+  var x = 0.0;
+  var y = 0.0;
+  var tapX = 0.0;
+  var tapY = 0.0;
+  var isHovering = false;
+  var isTap = false;
+  var updaterValue = false;
+
+  onExit(PointerEvent details) {
+    setState(() {
+      isHovering = false;
+    });
+  }
+
+  onHover(PointerEvent details) {
+    setState(() {
+      isTap = false;
+      isHovering = true;
+      x = details.localPosition.dx;
+      y = details.localPosition.dy;
+    });
+  }
+
+  onTap(TapDownDetails details) {
+    setState(() {
+      isTap = true;
+      updaterValue = !updaterValue;
+      tapX = details.localPosition.dx;
+      tapY = details.localPosition.dy;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+        onTapDown: onTap,
+        child: MouseRegion(
+            onExit: onExit,
+            onHover: onHover,
+            child: RepaintBoundary(
+                child: CustomPaint(
+                    painter: OverlayPainter(widget.text, x, y, tapX, tapY,
+                        isHovering, isTap, updaterValue,
+                        blockHeight: widget.blockHeight)))));
+  }
+}
+
+class OverlayPainter extends CustomPainter {
+  // final paint1 = Paint()..color = Colors.amber;
+  // final paint2 = Paint()..color = Colors.black54;
+  static final paintLine = Paint()
+    ..color = const Color.fromARGB(85, 255, 66, 66)
+    ..strokeWidth = 0.4
+    ..style = PaintingStyle.fill
+    ..isAntiAlias = true
+    ..strokeCap = StrokeCap.round;
+  static final paintBlock = Paint()
+    ..color = const Color.fromARGB(127, 78, 255, 28)
+    ..strokeWidth = 1.5
+    ..style = PaintingStyle.fill
+    ..isAntiAlias = true
+    ..strokeCap = StrokeCap.round;
+  final topOffset = 8.0;
+  final scrollbarWidth = 6.0;
+
+  final String text;
+  final double blockHeight;
+  final double x;
+  final double y;
+  final double tapX;
+  final double tapY;
+  final bool isHovering;
+  final bool isTap;
+  final bool updaterValue;
+
+  OverlayPainter(
+    this.text,
+    this.x,
+    this.y,
+    this.tapX,
+    this.tapY,
+    this.isHovering,
+    this.isTap,
+    this.updaterValue, {
+    required this.blockHeight,
+  });
+
+  var previousTapRect = Rect.zero;
+  static var oldLeft = -1.0;
+  static var oldTopTap = -1.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final blockWidth = size.width / 12.0;
+
+    if (isTap) {
+      final lineTap = (tapY / (blockHeight + topOffset)).toInt();
+      final topTap = lineTap * blockHeight + lineTap * topOffset;
+      final startOffset =
+          (size.width - blockWidth * 8) / 2.0 - blockWidth / 2.0;
+      final moreThenHalf = tapX > size.width / 2.0;
+      var column =
+          ((tapX + (moreThenHalf ? -blockWidth * 2 : -blockWidth)) / blockWidth)
+              .toInt();
+
+      if (column % 2 == 1) column--;
+
+      final xOffset = column > 3 ? blockWidth : 0.0;
+      final left = column * blockWidth + startOffset + xOffset - scrollbarWidth;
+
+      if (left == oldLeft && topTap == oldTopTap) {
+        oldLeft = -1.0;
+        oldTopTap = -1.0;
+      } else if (left > 0.0 && topTap >= 0.0 && column < 8) {
+        canvas.drawRect(
+            Rect.fromLTWH(left, topTap, blockWidth * 2, blockHeight),
+            paintBlock);
+
+        oldLeft = left;
+        oldTopTap = topTap;
+      }
+    } else if (oldLeft > 0.0 && oldTopTap >= 0.0) {
+      canvas.drawRect(
+          Rect.fromLTWH(oldLeft, oldTopTap, blockWidth * 2, blockHeight),
+          paintBlock);
+    }
+
+    if (isHovering) {
+      var line = (y / (blockHeight + topOffset)).toInt();
+      final top = line * blockHeight + line * topOffset;
+
+      canvas.drawRect(
+          Rect.fromLTWH(0, top, size.width, blockHeight), paintLine);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant OverlayPainter oldDelegate) {
+    return y != oldDelegate.y ||
+        tapY != oldDelegate.tapY ||
+        updaterValue != oldDelegate.updaterValue;
   }
 }

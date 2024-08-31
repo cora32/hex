@@ -17,21 +17,17 @@ class _MainPageState extends State<MainPage> {
   final controller = HexController();
   final ctrlEncoded = TextEditingController();
   final ctrlDecoded = TextEditingController();
-  final ctrlUpperMap = TextEditingController();
-  final ctrlLowerMap = TextEditingController();
 
   @override
   void dispose() {
     ctrlEncoded.dispose();
     ctrlDecoded.dispose();
-    ctrlUpperMap.dispose();
-    ctrlLowerMap.dispose();
 
     super.dispose();
   }
 
   Future<void> onChangedEncoded(String val) async {
-    ctrlDecoded.text = val;
+    ctrlDecoded.text = await controller.decode(val);
   }
 
   Future<void> onChangedDecoded(String val) async {
@@ -176,7 +172,7 @@ class _ModeBlockState extends State<ModeBlock> {
   @override
   Widget build(BuildContext context) {
     return Container(
-        width: 300,
+        width: 210,
         color: Colors.black,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -196,8 +192,8 @@ class _ModeBlockState extends State<ModeBlock> {
                     color: Colors.black,
                     child: HexMap(
                       const TextStyle(
-                        color: Colors.orangeAccent,
-                        // decoration: TextDecoration.underline,
+                        color: Colors.orangeAccent, height: 1.5, fontSize: 12
+                          // decoration: TextDecoration.underline,
                       ),
                       widget.text,
                     ),
